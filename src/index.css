@@ -1,0 +1,30 @@
+/* Tailwind CSS imports */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Reset & Global Styles */
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    @apply h-full;
+  }
+
+  body {
+    @apply h-full m-0 p-0 font-sans antialiased bg-gray-50 text-gray-900;
+  }
+
+  #root {
+    @apply h-full;
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}

@@ -1,0 +1,5 @@
+/**
+ * Middleware Folder
+ * Custom middleware for authentication, validation, error handling
+ * Will be populated in future phases
+ */
