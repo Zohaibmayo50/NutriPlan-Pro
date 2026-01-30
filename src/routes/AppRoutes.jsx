@@ -3,6 +3,7 @@ import ProtectedRoute from './ProtectedRoute'
 
 // Auth pages
 import LoginPage from '../pages/auth/LoginPage'
+import NotAuthorizedPage from '../pages/auth/NotAuthorizedPage'
 
 // Protected pages
 import DashboardPage from '../pages/dashboard/DashboardPage'
@@ -19,12 +20,13 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/not-authorized" element={<NotAuthorizedPage />} />
 
       {/* Protected Routes - Require authentication */}
       <Route
         path="/onboarding"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiresDietitian={true}>
             <OnboardingPage />
           </ProtectedRoute>
         }
@@ -33,7 +35,7 @@ const AppRoutes = () => {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute requiresOnboarding={true}>
+          <ProtectedRoute requiresOnboarding={true} requiresDietitian={true}>
             <DashboardPage />
           </ProtectedRoute>
         }
@@ -42,7 +44,7 @@ const AppRoutes = () => {
       <Route
         path="/plans/new"
         element={
-          <ProtectedRoute requiresOnboarding={true}>
+          <ProtectedRoute requiresOnboarding={true} requiresDietitian={true}>
             <NewPlanPage />
           </ProtectedRoute>
         }
@@ -51,7 +53,7 @@ const AppRoutes = () => {
       <Route
         path="/plans/:planId"
         element={
-          <ProtectedRoute requiresOnboarding={true}>
+          <ProtectedRoute requiresOnboarding={true} requiresDietitian={true}>
             <PlanDetailPage />
           </ProtectedRoute>
         }

@@ -12,6 +12,13 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
+    // Helper function to check if user has dietitian role
+    function isDietitian(userId) {
+      return isAuthenticated() 
+        && isOwner(userId)
+        && get(/databases/$(database)/documents/users/$(userId)).data.role == 'dietitian';
+    }
+    
     // Users collection
     // Users can only read and write their own profile
     match /users/{userId} {
@@ -21,15 +28,15 @@ service cloud.firestore {
       allow delete: if false; // Users cannot delete their own profile
       
       // Branding subcollection
-      // Users can manage their own branding settings
+      // Only dietitians can manage branding settings
       match /branding/{document=**} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
+        allow read, write: if isDietitian(userId);
       }
       
       // Plans subcollection
-      // Users can manage their own plans
+      // Only dietitians can manage diet plans
       match /plans/{planId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
+        allow read, write: if isDietitian(userId);
       }
     }
     
