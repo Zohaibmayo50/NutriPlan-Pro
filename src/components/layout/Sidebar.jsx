@@ -9,6 +9,7 @@ const Sidebar = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/clients', label: 'Clients', icon: '👥' },
     { path: '/plans/new', label: 'New Plan', icon: '➕' },
   ]
 
