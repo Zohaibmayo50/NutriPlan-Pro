@@ -164,13 +164,28 @@ export default function DietPlanDetailPage() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate(client ? `/clients/${client.id}` : '/clients')}
-          className="mb-4"
-        >
-          ← Back to {client ? 'Client' : 'Clients'}
-        </Button>
+        <div className="flex gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard')}
+          >
+            🏠 Dashboard
+          </Button>
+          {client && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(`/clients/${client.id}`)}
+            >
+              ← Client Details
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/clients')}
+          >
+            👥 Clients
+          </Button>
+        </div>
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">

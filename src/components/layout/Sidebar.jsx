@@ -8,9 +8,9 @@ const Sidebar = () => {
   const location = useLocation()
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
     { path: '/clients', label: 'Clients', icon: '👥' },
-    { path: '/plans/new', label: 'New Plan', icon: '➕' },
+    { path: '/diet-plans/new', label: 'New Diet Plan', icon: '➕' },
   ]
 
   return (

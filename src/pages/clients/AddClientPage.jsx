@@ -70,13 +70,20 @@ export default function AddClientPage() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/clients')}
-          className="mb-4"
-        >
-          ← Back to Clients
-        </Button>
+        <div className="flex gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard')}
+          >
+            🏠 Dashboard
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/clients')}
+          >
+            ← Back to Clients
+          </Button>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900">Add New Client</h1>
         <p className="text-gray-600 mt-1">Create a new client profile</p>
       </div>

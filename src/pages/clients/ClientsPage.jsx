@@ -43,14 +43,23 @@ export default function ClientsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-600 mt-1">Manage your client profiles</p>
-        </div>
-        <Button onClick={() => navigate('/clients/new')}>
-          + Add New Client
+      <div className="mb-8">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/dashboard')}
+          className="mb-4"
+        >
+          🏠 Dashboard
         </Button>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+            <p className="text-gray-600 mt-1">Manage your client profiles</p>
+          </div>
+          <Button onClick={() => navigate('/clients/new')}>
+            + Add New Client
+          </Button>
+        </div>
       </div>
 
       {/* Error State */}

@@ -108,15 +108,30 @@ export default function DietPlanCreatePage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate(formData.clientId ? `/clients/${formData.clientId}` : '/clients')}
-          className="mb-4"
-        >
-          ← Back
-        </Button>
+        <div className="flex gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard')}
+          >
+            🏠 Dashboard
+          </Button>
+          {formData.clientId && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(`/clients/${formData.clientId}`)}
+            >
+              ← Client Details
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/clients')}
+          >
+            👥 Clients
+          </Button>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900">Create Diet Plan</h1>
-        <p className="text-gray-600 mt-1">Create a new diet plan for your client</p>
+        <p className="text-gray-600 mt-1">Create a new AI-powered diet plan for your client</p>
       </div>
 
       <Card>

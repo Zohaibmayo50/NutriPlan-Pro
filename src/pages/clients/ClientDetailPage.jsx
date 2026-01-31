@@ -145,13 +145,20 @@ export default function ClientDetailPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/clients')}
-          className="mb-4"
-        >
-          ← Back to Clients
-        </Button>
+        <div className="flex gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard')}
+          >
+            🏠 Dashboard
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/clients')}
+          >
+            ← Back to Clients
+          </Button>
+        </div>
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
