@@ -86,16 +86,22 @@ export const getClientDietPlans = async (clientId) => {
     const plansRef = collection(db, 'dietPlans');
     const q = query(
       plansRef, 
-      where('clientId', '==', clientId),
-      orderBy('createdAt', 'desc')
+      where('clientId', '==', clientId)
     );
     
     const querySnapshot = await getDocs(q);
 
-    return querySnapshot.docs.map(doc => ({
+    const plans = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort by createdAt on client side
+    return plans.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    });
   } catch (error) {
     console.error('❌ Error getting client diet plans:', error);
     throw new Error('Failed to fetch diet plans');
@@ -112,16 +118,22 @@ export const getDietitianDietPlans = async (dietitianId) => {
     const plansRef = collection(db, 'dietPlans');
     const q = query(
       plansRef, 
-      where('dietitianId', '==', dietitianId),
-      orderBy('createdAt', 'desc')
+      where('dietitianId', '==', dietitianId)
     );
     
     const querySnapshot = await getDocs(q);
 
-    return querySnapshot.docs.map(doc => ({
+    const plans = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort by createdAt on client side
+    return plans.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    });
   } catch (error) {
     console.error('❌ Error getting dietitian diet plans:', error);
     throw new Error('Failed to fetch diet plans');

@@ -88,16 +88,22 @@ export const getDietitianClients = async (dietitianId) => {
     const clientsRef = collection(db, 'clients');
     const q = query(
       clientsRef, 
-      where('dietitianId', '==', dietitianId),
-      orderBy('createdAt', 'desc')
+      where('dietitianId', '==', dietitianId)
     );
     
     const querySnapshot = await getDocs(q);
 
-    return querySnapshot.docs.map(doc => ({
+    const clients = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort by createdAt on client side
+    return clients.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    });
   } catch (error) {
     console.error('❌ Error getting dietitian clients:', error);
     throw new Error('Failed to fetch clients');
