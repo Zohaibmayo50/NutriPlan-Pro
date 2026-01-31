@@ -39,10 +39,8 @@ export default function ClientDetailPage() {
       setLoading(true);
       setError(null);
       
-      const [clientData, plans] = await Promise.all([
-        getClient(clientId),
-        getClientDietPlans(clientId)
-      ]);
+      // Load client data first
+      const clientData = await getClient(clientId);
 
       // Verify ownership
       if (clientData.dietitianId !== user.uid) {
@@ -50,7 +48,15 @@ export default function ClientDetailPage() {
       }
 
       setClient(clientData);
-      setDietPlans(plans);
+      
+      // Load diet plans (might be empty for new clients)
+      try {
+        const plans = await getClientDietPlans(clientId);
+        setDietPlans(plans);
+      } catch (planErr) {
+        console.warn('No diet plans found for client:', planErr);
+        setDietPlans([]);
+      }
       
       // Initialize edit form
       setEditForm({

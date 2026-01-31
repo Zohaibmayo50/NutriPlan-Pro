@@ -199,7 +199,16 @@ VITE_FIREBASE_APP_ID=your_app_id
 PORT=5000
 NODE_ENV=development
 CORS_ORIGIN=http://localhost:3000
+
+# Phase 7: AI Diet Plan Generation
+OPENAI_API_KEY=your_openai_api_key_here
 ```
+
+**OpenAI API Key Setup:**
+1. Go to https://platform.openai.com/api-keys
+2. Create a new API key
+3. Add it to `server/.env` as `OPENAI_API_KEY`
+4. **Important:** Keep this key secure and never commit it to git
 
 **Important:** See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for complete Firebase configuration instructions.
 

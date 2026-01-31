@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createDietPlan } from '../../services/dietPlanService';
-import { getDietitianClients } from '../../services/clientService';
+import { getDietitianClients, getClient } from '../../services/clientService';
+import { generateDietPlan as generateWithAI } from '../../services/aiService';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
@@ -12,6 +13,7 @@ export default function DietPlanCreatePage() {
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(false);
+  const [generatingAI, setGeneratingAI] = useState(false);
   const [loadingClients, setLoadingClients] = useState(true);
   const [error, setError] = useState(null);
   const [clients, setClients] = useState([]);
@@ -63,21 +65,32 @@ export default function DietPlanCreatePage() {
 
     try {
       setLoading(true);
+      setGeneratingAI(true);
       setError(null);
 
+      // Get full client data for AI prompt
+      const clientData = await getClient(formData.clientId);
+
+      // Generate diet plan using AI
+      console.log('🤖 Generating AI diet plan...');
+      const generatedPlan = await generateWithAI(clientData, formData.rawInput);
+
+      // Create the diet plan with AI-generated content
       const planData = {
-        title: formData.title.trim() || 'Untitled Diet Plan',
+        title: formData.title.trim() || `Diet Plan - ${clientData.fullName}`,
         rawInput: formData.rawInput.trim(),
+        generatedPlan: generatedPlan,
         notes: formData.notes.trim(),
-        status: 'draft',
-        generatedPlan: null
+        status: 'generated'
       };
 
+      setGeneratingAI(false);
       const planId = await createDietPlan(user.uid, formData.clientId, planData);
       navigate(`/diet-plans/${planId}`);
     } catch (err) {
       console.error('Error creating diet plan:', err);
       setError(err.message || 'Failed to create diet plan');
+      setGeneratingAI(false);
     } finally {
       setLoading(false);
     }
@@ -205,15 +218,29 @@ export default function DietPlanCreatePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="text-sm text-blue-900">
-                <p className="font-medium mb-1">How it works:</p>
+                <p className="font-medium mb-1">🤖 AI-Powered Generation:</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Your plan will be saved as a <strong>draft</strong></li>
-                  <li>Raw input will be preserved for future reference</li>
-                  <li>You can regenerate the plan later when AI integration is available</li>
+                  <li>AI will create a personalized 7-day diet plan</li>
+                  <li>Based on client profile + your raw input</li>
+                  <li>Generated plan is fully editable after creation</li>
+                  <li>Raw input is preserved for regeneration</li>
                 </ul>
               </div>
             </div>
           </div>
+
+          {/* AI Generation Progress */}
+          {generatingAI && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600 mr-3"></div>
+                <div className="text-sm text-green-900">
+                  <p className="font-medium">🤖 AI is generating your diet plan...</p>
+                  <p className="text-xs mt-1">This may take 10-30 seconds. Please wait.</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
@@ -226,7 +253,7 @@ export default function DietPlanCreatePage() {
               Cancel
             </Button>
             <Button type="submit" disabled={loading || clients.length === 0}>
-              {loading ? 'Creating...' : 'Create Diet Plan'}
+              {generatingAI ? '🤖 Generating with AI...' : loading ? 'Creating...' : '🤖 Generate Diet Plan'}
             </Button>
           </div>
         </form>

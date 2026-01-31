@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getDietPlan, updateDietPlan, deleteDietPlan } from '../../services/dietPlanService';
 import { getClient } from '../../services/clientService';
+import { generateDietPlan as generateWithAI } from '../../services/aiService';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
@@ -14,9 +15,11 @@ export default function DietPlanDetailPage() {
   const [plan, setPlan] = useState(null);
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
   
   const [editForm, setEditForm] = useState({
     title: '',
@@ -88,18 +91,40 @@ export default function DietPlanDetailPage() {
   };
 
   const handleRegenerate = async () => {
+    if (!plan?.rawInput) {
+      setError('Cannot regenerate: No raw input available');
+      return;
+    }
+
+    if (!client) {
+      setError('Cannot regenerate: Client data not available');
+      return;
+    }
+
     try {
+      setRegenerating(true);
+      setShowRegenerateConfirm(false);
       setError(null);
-      // Future: Call AI API to regenerate plan
+
+      console.log('🤖 Regenerating AI diet plan...');
+      
+      // Call AI to regenerate the plan
+      const generatedPlan = await generateWithAI(client, plan.rawInput);
+
+      // Update the plan with new generated content
       await updateDietPlan(planId, { 
+        generatedPlan,
         status: 'generated',
-        generatedPlan: 'AI-generated plan would appear here...' 
+        updatedAt: new Date()
       });
+
       await loadPlanData();
-      alert('Plan regeneration will be available when AI integration is complete');
+      console.log('✅ Plan regenerated successfully');
     } catch (err) {
       console.error('Error regenerating plan:', err);
       setError(err.message || 'Failed to regenerate plan');
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -270,13 +295,24 @@ export default function DietPlanDetailPage() {
               {!isEditing && (
                 <Button 
                   variant="outline" 
-                  onClick={handleRegenerate}
-                  disabled={!plan?.rawInput}
+                  onClick={() => setShowRegenerateConfirm(true)}
+                  disabled={!plan?.rawInput || regenerating}
                 >
-                  🔄 Regenerate
+                  {regenerating ? '🤖 Regenerating...' : '🔄 Regenerate'}
                 </Button>
               )}
             </div>
+
+            {/* Regenerating Progress */}
+            {regenerating && (
+              <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center text-sm text-green-900">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                  <span className="font-medium">🤖 AI is regenerating your diet plan... This may take 10-30 seconds.</span>
+                </div>
+              </div>
+            )}
+
             {!isEditing ? (
               plan?.generatedPlan ? (
                 <div className="prose max-w-none">
@@ -374,6 +410,47 @@ export default function DietPlanDetailPage() {
           </div>
         </Card>
       </div>
+
+      {/* Regenerate Confirmation Modal */}
+      {showRegenerateConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="max-w-md mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                ⚠️ Regenerate Diet Plan?
+              </h3>
+              <p className="text-gray-600 mb-4">
+                This will use AI to create a new diet plan based on the raw input. 
+                The current generated plan will be <strong>overwritten</strong>. 
+                This action cannot be undone.
+              </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4 text-sm text-yellow-900">
+                <p className="font-medium mb-1">⚡ What will happen:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li>Raw input will remain unchanged</li>
+                  <li>AI will generate a fresh 7-day diet plan</li>
+                  <li>Current generated content will be replaced</li>
+                </ul>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRegenerateConfirm(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleRegenerate}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  🤖 Regenerate
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
