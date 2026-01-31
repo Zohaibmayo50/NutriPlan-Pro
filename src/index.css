@@ -28,3 +28,38 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 }
+
+/* Print styles for diet plans */
+@media print {
+  /* Hide navigation and buttons */
+  aside, header, button, .no-print {
+    display: none !important;
+  }
+  
+  /* Full width for content */
+  body {
+    background: white;
+  }
+  
+  .max-w-5xl, .max-w-4xl {
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  /* Better text rendering */
+  pre {
+    white-space: pre-wrap;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+  
+  /* Page breaks */
+  .print-page-break {
+    page-break-after: always;
+  }
+  
+  /* Headers on each page */
+  @page {
+    margin: 2cm;
+  }
+}

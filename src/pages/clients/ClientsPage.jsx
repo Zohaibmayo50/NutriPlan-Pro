@@ -54,13 +54,38 @@ export default function ClientsPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-            <p className="text-gray-600 mt-1">Manage your client profiles</p>
+            <p className="text-gray-600 mt-1">Manage your client profiles and create AI-powered diet plans</p>
           </div>
           <Button onClick={() => navigate('/clients/new')}>
             + Add New Client
           </Button>
         </div>
       </div>
+
+      {/* How it Works Info Box */}
+      {clients.length === 0 && !loading && !error && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3">📋 How it works:</h3>
+          <ol className="space-y-2 text-sm text-blue-900">
+            <li className="flex items-start">
+              <span className="font-bold mr-2">1.</span>
+              <span><strong>Add a client</strong> - Create a profile with their age, goals, allergies, medical conditions</span>
+            </li>
+            <li className="flex items-start">
+              <span className="font-bold mr-2">2.</span>
+              <span><strong>Create diet plan</strong> - Click on the client → "Create New Plan"</span>
+            </li>
+            <li className="flex items-start">
+              <span className="font-bold mr-2">3.</span>
+              <span><strong>AI generates plan</strong> - Our AI creates a personalized 7-day meal plan based on client data</span>
+            </li>
+            <li className="flex items-start">
+              <span className="font-bold mr-2">4.</span>
+              <span><strong>Edit & Export</strong> - Review, edit the plan, and print/export as PDF</span>
+            </li>
+          </ol>
+        </div>
+      )}
 
       {/* Error State */}
       {error && (

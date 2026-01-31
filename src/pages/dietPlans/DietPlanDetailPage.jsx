@@ -307,15 +307,25 @@ export default function DietPlanDetailPage() {
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Generated Diet Plan</h2>
-              {!isEditing && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowRegenerateConfirm(true)}
-                  disabled={!plan?.rawInput || regenerating}
-                >
-                  {regenerating ? '🤖 Regenerating...' : '🔄 Regenerate'}
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {!isEditing && plan?.generatedPlan && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.print()}
+                  >
+                    🖨️ Print/PDF
+                  </Button>
+                )}
+                {!isEditing && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowRegenerateConfirm(true)}
+                    disabled={!plan?.rawInput || regenerating}
+                  >
+                    {regenerating ? '🤖 Regenerating...' : '🔄 Regenerate'}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Regenerating Progress */}
@@ -330,16 +340,21 @@ export default function DietPlanDetailPage() {
 
             {!isEditing ? (
               plan?.generatedPlan ? (
-                <div className="prose max-w-none">
-                  <pre className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-sm text-gray-800 border border-gray-200">
-                    {plan.generatedPlan}
-                  </pre>
+                <div className="prose max-w-none print:prose-lg">
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
+                      {plan.generatedPlan}
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-gray-500 no-print">
+                    💡 <strong>Tip:</strong> Click "Print/PDF" button to save or print this diet plan
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="text-gray-600 mb-4">No plan generated yet</p>
-                  <Button onClick={handleRegenerate} disabled={!plan?.rawInput}>
-                    Generate Plan
+                  <Button onClick={() => setShowRegenerateConfirm(true)} disabled={!plan?.rawInput}>
+                    🤖 Generate Plan with AI
                   </Button>
                 </div>
               )
