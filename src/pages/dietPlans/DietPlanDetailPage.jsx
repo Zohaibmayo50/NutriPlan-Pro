@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getDietPlan, updateDietPlan, deleteDietPlan } from '../../services/dietPlanService';
@@ -6,16 +6,20 @@ import { getClient } from '../../services/clientService';
 import { generateDietPlan as generateWithAI } from '../../services/aiService';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import FormattedPlan from '../../components/plans/FormattedPlan';
+import html2pdf from 'html2pdf.js';
 
 export default function DietPlanDetailPage() {
   const { planId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const planContentRef = useRef(null);
   
   const [plan, setPlan] = useState(null);
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -136,6 +140,74 @@ export default function DietPlanDetailPage() {
       console.error('Error deleting diet plan:', err);
       setError(err.message || 'Failed to delete diet plan');
       setShowDeleteConfirm(false);
+    }
+  };
+
+  /**
+   * Export diet plan as PDF
+   * Format: ClientName_PlanTitle_Date.pdf
+   */
+  const handleExportPDF = async () => {
+    if (!plan?.generatedPlan || !planContentRef.current) {
+      setError('No plan content to export');
+      return;
+    }
+
+    try {
+      setExportingPDF(true);
+      setError(null);
+
+      // Generate filename: ClientName_PlanTitle_Date.pdf
+      const clientName = client?.fullName?.replace(/\s+/g, '_') || 'Client';
+      const planTitle = plan.title?.replace(/\s+/g, '_') || 'DietPlan';
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `${clientName}_${planTitle}_${date}.pdf`;
+
+      // PDF configuration
+      const opt = {
+        margin: [15, 15, 15, 15],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait' 
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      // Create PDF content wrapper
+      const pdfContent = document.createElement('div');
+      pdfContent.style.cssText = 'background: white; padding: 20px; color: black;';
+      
+      // Add header
+      const header = document.createElement('div');
+      header.style.cssText = 'margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;';
+      header.innerHTML = `
+        <h1 style="margin: 0; font-size: 24px; color: #000;">${plan.title || 'Diet Plan'}</h1>
+        ${client ? `<p style="margin: 5px 0; color: #333;">Client: ${client.fullName}</p>` : ''}
+        <p style="margin: 5px 0; font-size: 12px; color: #666;">Generated: ${new Date().toLocaleDateString()}</p>
+      `;
+      pdfContent.appendChild(header);
+
+      // Clone the plan content
+      const contentClone = planContentRef.current.cloneNode(true);
+      pdfContent.appendChild(contentClone);
+
+      // Generate PDF
+      await html2pdf().set(opt).from(pdfContent).save();
+
+      console.log('✅ PDF exported successfully:', filename);
+    } catch (err) {
+      console.error('Error exporting PDF:', err);
+      setError(err.message || 'Failed to export PDF');
+    } finally {
+      setExportingPDF(false);
     }
   };
 
@@ -309,12 +381,21 @@ export default function DietPlanDetailPage() {
               <h2 className="text-xl font-semibold text-gray-900">Generated Diet Plan</h2>
               <div className="flex gap-2">
                 {!isEditing && plan?.generatedPlan && (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => window.print()}
-                  >
-                    🖨️ Print/PDF
-                  </Button>
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleExportPDF}
+                      disabled={exportingPDF}
+                    >
+                      {exportingPDF ? '⏳ Exporting...' : '📄 Export PDF'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => window.print()}
+                    >
+                      🖨️ Print
+                    </Button>
+                  </>
                 )}
                 {!isEditing && (
                   <Button 
@@ -341,13 +422,11 @@ export default function DietPlanDetailPage() {
             {!isEditing ? (
               plan?.generatedPlan ? (
                 <div className="prose max-w-none print:prose-lg">
-                  <div className="bg-white p-6 rounded-lg border border-gray-200">
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
-                      {plan.generatedPlan}
-                    </div>
+                  <div className="bg-white p-6 rounded-lg border border-gray-200" ref={planContentRef}>
+                    <FormattedPlan planContent={plan.generatedPlan} />
                   </div>
                   <div className="mt-4 text-xs text-gray-500 no-print">
-                    💡 <strong>Tip:</strong> Click "Print/PDF" button to save or print this diet plan
+                    💡 <strong>Tip:</strong> Use "Export PDF" to save as a file, or "Print" for quick printing
                   </div>
                 </div>
               ) : (
