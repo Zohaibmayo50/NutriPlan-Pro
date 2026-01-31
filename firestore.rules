@@ -43,19 +43,35 @@ service cloud.firestore {
     // Clients collection
     // Only the owning dietitian can access their clients
     match /clients/{clientId} {
-      allow read: if isAuthenticated() && resource.data.dietitianId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.dietitianId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.dietitianId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.dietitianId == request.auth.uid;
+      allow read: if isAuthenticated() 
+        && resource.data.dietitianId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
+      allow create: if isAuthenticated() 
+        && request.resource.data.dietitianId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
+      allow update: if isAuthenticated() 
+        && resource.data.dietitianId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
+      allow delete: if isAuthenticated() 
+        && resource.data.dietitianId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
     }
     
     // Diet Plans collection
     // Only the owning dietitian can access their diet plans
     match /dietPlans/{planId} {
-      allow read: if isAuthenticated() && resource.data.dietitianId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.dietitianId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.dietitianId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.dietitianId == request.auth.uid;
+      allow read: if isAuthenticated() 
+        && resource.data.dietitianId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
+      allow create: if isAuthenticated() 
+        && request.resource.data.dietitianId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
+      allow update: if isAuthenticated() 
+        && resource.data.dietitianId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
+      allow delete: if isAuthenticated() 
+        && resource.data.dietitianId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
     }
     
     // Deny all other access by default
