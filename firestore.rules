@@ -43,6 +43,10 @@ service cloud.firestore {
     // Clients collection
     // Only the owning dietitian can access their clients
     match /clients/{clientId} {
+      // Allow list queries if user is authenticated dietitian
+      allow list: if isAuthenticated() 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
+      // Allow individual reads
       allow read: if isAuthenticated() 
         && resource.data.dietitianId == request.auth.uid
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
@@ -60,6 +64,10 @@ service cloud.firestore {
     // Diet Plans collection
     // Only the owning dietitian can access their diet plans
     match /dietPlans/{planId} {
+      // Allow list queries if user is authenticated dietitian
+      allow list: if isAuthenticated() 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
+      // Allow individual reads
       allow read: if isAuthenticated() 
         && resource.data.dietitianId == request.auth.uid
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
