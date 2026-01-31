@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import healthRoutes from './routes/health.js'
+import aiRoutes from './routes/ai.js'
 
 // Load environment variables
 dotenv.config()
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
  * Routes
  */
 app.use('/api/health', healthRoutes)
+app.use('/api/ai', aiRoutes)
 
 // Root endpoint
 app.get('/', (req, res) => {
