@@ -116,5 +116,5 @@ After deployment:
 
 ---
 
-**Status:** Ready to deploy!  
-**Next Step:** Add `GEMINI_API_KEY` to Vercel environment variables
+**Status:** Ready to use!  
+**Remember:** After adding environment variables, you must redeploy for them to take effect!
