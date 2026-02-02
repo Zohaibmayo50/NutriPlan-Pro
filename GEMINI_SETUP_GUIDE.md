@@ -178,5 +178,5 @@ After deployment:
 
 ---
 
-**Status:** Ready to use!  
-**Remember:** After adding environment variables, you must redeploy for them to take effect!
+**Status:** Production ready with usage tracking!  
+**Remember:** After adding environment variables, redeploy to apply changes.
