@@ -10,19 +10,45 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin (only once) with error handling
 let admin;
+let firebaseError = null;
+
 try {
+  // Log environment variables (without exposing full values)
+  console.log('🔍 Checking Firebase credentials...');
+  console.log('  FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID ? '✓ Set' : '✗ Missing');
+  console.log('  FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL ? '✓ Set' : '✗ Missing');
+  console.log('  FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY ? `✓ Set (${process.env.FIREBASE_PRIVATE_KEY.length} chars)` : '✗ Missing');
+  
+  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+    throw new Error('Missing Firebase environment variables');
+  }
+
   if (!getApps().length) {
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    
+    // Validate private key format
+    if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+      throw new Error('FIREBASE_PRIVATE_KEY does not contain BEGIN marker');
+    }
+    if (!privateKey.includes('-----END PRIVATE KEY-----')) {
+      throw new Error('FIREBASE_PRIVATE_KEY does not contain END marker');
+    }
+    
+    console.log('🔥 Initializing Firebase Admin...');
     initializeApp({
       credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+        privateKey: privateKey
       })
     });
+    console.log('✅ Firebase Admin initialized successfully');
   }
   admin = getFirestore();
 } catch (firebaseInitError) {
+  firebaseError = firebaseInitError;
   console.error('❌ Firebase Admin initialization failed:', firebaseInitError.message);
+  console.error('❌ Full error:', firebaseInitError);
   // admin will be undefined, we'll check this in the handler
 }
 
@@ -136,7 +162,13 @@ export default async function handler(req, res) {
       return res.status(500).json({
         success: false,
         error: 'Server configuration error. Please check Firebase credentials.',
-        details: 'Firebase Admin initialization failed. Check FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY environment variables.'
+        details: firebaseError ? firebaseError.message : 'Firebase Admin initialization failed',
+        debugInfo: {
+          hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+          hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+          hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+          privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0
+        }
       });
     }
 
