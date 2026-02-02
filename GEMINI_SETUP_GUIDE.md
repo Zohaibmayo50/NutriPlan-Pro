@@ -73,8 +73,27 @@ Now go to **Vercel** → **Settings** → **Environment Variables** and add thes
 #### **Variable 3:**
 - **Name:** `FIREBASE_PRIVATE_KEY`
 - **Value:** Copy from JSON `private_key` (entire key including BEGIN and END)
-- **Important:** Keep the `\n` characters - they are needed!
-- **Example:** `-----BEGIN PRIVATE KEY-----\nMIIEvQI...\n-----END PRIVATE KEY-----\n`
+- **CRITICAL:** The `\n` must be **literal backslash-n**, NOT actual line breaks!
+- **Format:** One long line with `\n` as two characters (backslash + n)
+
+**Example (CORRECT format):**
+```
+-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...\n-----END PRIVATE KEY-----\n
+```
+
+**❌ WRONG:** Don't paste with actual line breaks like this:
+```
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG...
+-----END PRIVATE KEY-----
+```
+
+**✅ CORRECT:** Paste as one line with `\n` as literal text:
+```
+-----BEGIN PRIVATE KEY-----\nMIIEvQI...\n-----END PRIVATE KEY-----\n
+```
+
+**Quick Fix:** Copy the `private_key` value from your JSON file exactly as it appears (with `\n` characters), then paste into Vercel.
 
 **For all 3 variables:**
 - ✅ Check: Production
