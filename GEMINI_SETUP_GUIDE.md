@@ -34,15 +34,77 @@
 
 ---
 
-## 💻 Step 3: Local Development Setup
+## � Step 3: Setup Firebase Admin (Required for Usage Tracking)
+
+### **Get Firebase Service Account Credentials:**
+
+1. Go to **Firebase Console**: https://console.firebase.google.com
+2. Select your project: **NutriPlan-Pro**
+3. Click the **gear icon** (⚙️) → **Project Settings**
+4. Go to **Service Accounts** tab
+5. Click **"Generate New Private Key"**
+6. Click **"Generate Key"** in the popup
+7. A JSON file will download - **keep this file secure!**
+
+### **Add Firebase Admin Credentials to Vercel:**
+
+Open the downloaded JSON file. It will look like this:
+
+```json
+{
+  "project_id": "your-project-id",
+  "client_email": "firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nYourKeyHere\n-----END PRIVATE KEY-----"
+}
+```
+
+Now go to **Vercel** → **Settings** → **Environment Variables** and add these 3 variables:
+
+#### **Variable 1:**
+- **Name:** `FIREBASE_PROJECT_ID`
+- **Value:** Copy from JSON `project_id`
+- **Example:** `nutriplan-pro-12345`
+
+#### **Variable 2:**
+- **Name:** `FIREBASE_CLIENT_EMAIL`
+- **Value:** Copy from JSON `client_email`
+- **Example:** `firebase-adminsdk-xxxxx@nutriplan-pro.iam.gserviceaccount.com`
+
+#### **Variable 3:**
+- **Name:** `FIREBASE_PRIVATE_KEY`
+- **Value:** Copy from JSON `private_key` (entire key including BEGIN and END)
+- **Important:** Keep the `\n` characters - they are needed!
+- **Example:** `-----BEGIN PRIVATE KEY-----\nMIIEvQI...\n-----END PRIVATE KEY-----\n`
+
+**For all 3 variables:**
+- ✅ Check: Production
+- ✅ Check: Preview  
+- ✅ Check: Development
+
+Click **Save** after adding each one.
+
+### **Redeploy Your App:**
+
+After adding all environment variables:
+1. Go to **Deployments** tab
+2. Find the latest deployment
+3. Click **"..."** (three dots) → **"Redeploy"**
+4. Wait 1-2 minutes for deployment to complete
+
+---
+
+## 💻 Step 4: Local Development Setup
 
 Add to your `.env.local` file (create if doesn't exist):
 
 ```bash
 GEMINI_API_KEY=your_api_key_here
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYourKeyHere\n-----END PRIVATE KEY-----"
 ```
 
-**Note:** This file is ignored by Git (in .gitignore) so your key stays secure.
+**Note:** This file is ignored by Git (in .gitignore) so your keys stay secure.
 
 ---
 
