@@ -30,13 +30,18 @@ export const generateDietPlan = async (clientData, rawInput, userId) => {
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text();
       console.error('❌ Non-JSON response:', text);
+      console.error('❌ Response status:', response.status);
+      console.error('❌ Content-Type:', contentType);
       throw new Error('Server error: Please check Vercel function logs. Ensure FIREBASE_PRIVATE_KEY is set correctly.');
     }
 
     const data = await response.json();
+    console.log('📦 API Response:', data);
 
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to generate diet plan');
+      // Log the full error details for debugging
+      console.error('❌ API Error Response:', data);
+      throw new Error(data.error || data.details || 'Failed to generate diet plan');
     }
 
     if (!data.success) {

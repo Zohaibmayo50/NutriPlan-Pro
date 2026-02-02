@@ -83,10 +83,12 @@ service cloud.firestore {
     }
     
     // AI Usage Tracking collection
-    // Dietitians can read/write their own usage records
+    // Dietitians can read their own usage records
+    // Server-side writes are allowed (Firebase Admin bypasses these rules)
     match /aiUsage/{usageId} {
       allow read: if isAuthenticated() && usageId.matches('^' + request.auth.uid + '_.*');
-      allow write: if false; // Server-side only
+      // Note: Firebase Admin SDK bypasses security rules, so server can write
+      allow write: if false; // Client-side writes blocked
     }
     
     // Deny all other access by default
