@@ -25,6 +25,14 @@ export const generateDietPlan = async (clientData, rawInput, userId) => {
       })
     });
 
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('❌ Non-JSON response:', text);
+      throw new Error('Server error: Please check Vercel function logs. Ensure FIREBASE_PRIVATE_KEY is set correctly.');
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
