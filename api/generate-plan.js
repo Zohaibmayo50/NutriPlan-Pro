@@ -1,14 +1,13 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
  * Vercel Serverless Function - AI Diet Plan Generation
  * POST /api/generate-plan
+ * Using Google Gemini API
  */
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Initialize Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // System prompt - Safety-First AI Assistant
 const SYSTEM_PROMPT = `You are a professional clinical dietitian assistant.
@@ -55,12 +54,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('❌ OPENAI_API_KEY not configured');
+    // Check if Gemini API key is configured
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('❌ GEMINI_API_KEY not configured');
       return res.status(500).json({
         success: false,
-        error: 'AI service not configured'
+        error: 'AI service not configured. Please add GEMINI_API_KEY to environment variables.'
       });
     }
 
@@ -124,24 +123,22 @@ OUTPUT FORMAT:
 
     console.log('🤖 Generating diet plan for:', clientData.fullName);
 
-    // Call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: SYSTEM_PROMPT
-        },
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 3000
+    // Initialize Gemini model (1.5 Flash - fast and free)
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 3000,
+      }
     });
 
-    const generatedPlan = completion.choices[0].message.content;
+    // Combine system prompt with user prompt
+    const fullPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}`;
+
+    // Call Gemini API
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const generatedPlan = response.text();
 
     // Safety check - block unsafe content
     if (containsUnsafePhrases(generatedPlan)) {
@@ -157,32 +154,38 @@ OUTPUT FORMAT:
     // Return the generated plan
     return res.status(200).json({
       success: true,
-      generatedPlan,
-      tokensUsed: completion.usage.total_tokens
+      generatedPlan
     });
 
   } catch (error) {
     console.error('❌ Error generating diet plan:', error);
 
-    // Handle specific OpenAI errors
-    if (error.status === 401) {
+    // Handle specific Gemini API errors
+    if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('API key not valid')) {
       return res.status(500).json({
         success: false,
-        error: 'Invalid OpenAI API key'
+        error: 'Invalid Gemini API key. Please check your GEMINI_API_KEY environment variable.'
       });
     }
 
-    if (error.status === 429) {
+    if (error.message?.includes('RATE_LIMIT') || error.status === 429) {
       return res.status(429).json({
         success: false,
         error: 'AI service rate limit exceeded. Please try again in a few moments.'
       });
     }
 
+    if (error.message?.includes('SAFETY')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Content was blocked by safety filters. Please rephrase your input.'
+      });
+    }
+
     // Generic error response
     return res.status(500).json({
       success: false,
-      error: 'Failed to generate diet plan. Please try again.'
+      error: error.message || 'Failed to generate diet plan. Please try again.'
     });
   }
 }
