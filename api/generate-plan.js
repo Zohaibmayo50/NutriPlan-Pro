@@ -1,13 +1,31 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 /**
  * Vercel Serverless Function - AI Diet Plan Generation
  * POST /api/generate-plan
- * Using Google Gemini API
+ * Using Google Gemini API with Free Tier Usage Limits
  */
+
+// Initialize Firebase Admin (only once)
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+    })
+  });
+}
+
+const admin = getFirestore();
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Free tier daily limit
+const DAILY_LIMIT = 3;
 
 // System prompt - Safety-First AI Assistant
 const SYSTEM_PROMPT = `You are a professional clinical dietitian assistant.
@@ -34,6 +52,69 @@ const containsUnsafePhrases = (text) => {
   return unsafePhrases.some(phrase => lowerText.includes(phrase));
 };
 
+/**
+ * Get today's date string (UTC)
+ */
+const getTodayDate = () => {
+  const now = new Date();
+  return now.toISOString().split('T')[0]; // YYYY-MM-DD
+};
+
+/**
+ * Check and track AI usage
+ * @returns {Promise<{allowed: boolean, remaining: number, message?: string}>}
+ */
+const checkAndTrackUsage = async (userId) => {
+  const today = getTodayDate();
+  const usageDocId = `${userId}_${today}`;
+  const usageRef = admin.collection('aiUsage').doc(usageDocId);
+
+  try {
+    const usageDoc = await usageRef.get();
+
+    if (!usageDoc.exists) {
+      // Create new usage record
+      await usageRef.set({
+        userId,
+        date: today,
+        generationsUsed: 1,
+        lastUpdated: FieldValue.serverTimestamp()
+      });
+
+      return {
+        allowed: true,
+        remaining: DAILY_LIMIT - 1
+      };
+    }
+
+    // Check existing usage
+    const data = usageDoc.data();
+    const currentUsed = data.generationsUsed || 0;
+
+    if (currentUsed >= DAILY_LIMIT) {
+      return {
+        allowed: false,
+        remaining: 0,
+        message: `Daily AI generation limit reached (${DAILY_LIMIT}/${DAILY_LIMIT}). Please try again tomorrow.`
+      };
+    }
+
+    // Increment usage
+    await usageRef.update({
+      generationsUsed: FieldValue.increment(1),
+      lastUpdated: FieldValue.serverTimestamp()
+    });
+
+    return {
+      allowed: true,
+      remaining: DAILY_LIMIT - currentUsed - 1
+    };
+  } catch (error) {
+    console.error('Error tracking AI usage:', error);
+    throw error;
+  }
+};
+
 export default async function handler(req, res) {
   // Only allow POST
   if (req.method !== 'POST') {
@@ -44,7 +125,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { clientData, rawInput } = req.body;
+    const { clientData, rawInput, userId } = req.body;
 
     // Validation
     if (!clientData) {
@@ -53,6 +134,29 @@ export default async function handler(req, res) {
         error: 'Client data is required'
       });
     }
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'User authentication required'
+      });
+    }
+
+    // Check usage limit BEFORE calling AI
+    console.log('📊 Checking AI usage limit for user:', userId);
+    const usageCheck = await checkAndTrackUsage(userId);
+
+    if (!usageCheck.allowed) {
+      console.log('⛔ Usage limit reached for user:', userId);
+      return res.status(429).json({
+        success: false,
+        error: usageCheck.message,
+        remaining: 0,
+        limit: DAILY_LIMIT
+      });
+    }
+
+    console.log(`✅ Usage allowed. Remaining: ${usageCheck.remaining}/${DAILY_LIMIT}`);
 
     // Check if Gemini API key is configured
     if (!process.env.GEMINI_API_KEY) {
@@ -151,10 +255,12 @@ OUTPUT FORMAT:
 
     console.log('✅ Diet plan generated successfully');
 
-    // Return the generated plan
+    // Return the generated plan with usage info
     return res.status(200).json({
       success: true,
-      generatedPlan
+      generatedPlan,
+      remaining: usageCheck.remaining,
+      limit: DAILY_LIMIT
     });
 
   } catch (error) {
@@ -164,14 +270,14 @@ OUTPUT FORMAT:
     if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('API key not valid')) {
       return res.status(500).json({
         success: false,
-        error: 'Invalid Gemini API key. Please check your GEMINI_API_KEY environment variable.'
+        error: 'AI service configuration error. Please contact support.'
       });
     }
 
-    if (error.message?.includes('RATE_LIMIT') || error.status === 429) {
+    if (error.message?.includes('RATE_LIMIT') || error.message?.includes('quota') || error.status === 429) {
       return res.status(429).json({
         success: false,
-        error: 'AI service rate limit exceeded. Please try again in a few moments.'
+        error: 'AI service is temporarily busy. Please try again later.'
       });
     }
 
@@ -182,10 +288,10 @@ OUTPUT FORMAT:
       });
     }
 
-    // Generic error response
+    // Generic error response (don't expose internal errors)
     return res.status(500).json({
       success: false,
-      error: error.message || 'Failed to generate diet plan. Please try again.'
+      error: 'Failed to generate diet plan. Please try again later.'
     });
   }
 }

@@ -82,6 +82,13 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dietitian';
     }
     
+    // AI Usage Tracking collection
+    // Dietitians can read/write their own usage records
+    match /aiUsage/{usageId} {
+      allow read: if isAuthenticated() && usageId.matches('^' + request.auth.uid + '_.*');
+      allow write: if false; // Server-side only
+    }
+    
     // Deny all other access by default
     match /{document=**} {
       allow read, write: if false;

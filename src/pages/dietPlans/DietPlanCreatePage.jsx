@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { createDietPlan } from '../../services/dietPlanService';
 import { getDietitianClients, getClient } from '../../services/clientService';
 import { generateDietPlan as generateWithAI } from '../../services/aiService';
+import { getAIUsage } from '../../services/aiUsageService';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
@@ -17,6 +18,7 @@ export default function DietPlanCreatePage() {
   const [loadingClients, setLoadingClients] = useState(true);
   const [error, setError] = useState(null);
   const [clients, setClients] = useState([]);
+  const [aiUsage, setAiUsage] = useState(null);
   
   const [formData, setFormData] = useState({
     clientId: searchParams.get('clientId') || '',
@@ -27,6 +29,7 @@ export default function DietPlanCreatePage() {
 
   useEffect(() => {
     loadClients();
+    loadAIUsage();
   }, [user]);
 
   const loadClients = async () => {
@@ -39,6 +42,15 @@ export default function DietPlanCreatePage() {
       setError('Failed to load clients');
     } finally {
       setLoadingClients(false);
+    }
+  };
+
+  const loadAIUsage = async () => {
+    try {
+      const usage = await getAIUsage(user.uid);
+      setAiUsage(usage);
+    } catch (err) {
+      console.error('Error loading AI usage:', err);
     }
   };
 
@@ -63,6 +75,12 @@ export default function DietPlanCreatePage() {
       return;
     }
 
+    // Check AI usage limit
+    if (aiUsage && aiUsage.remaining <= 0) {
+      setError('Daily AI generation limit reached (3/3). Please try again tomorrow.');
+      return;
+    }
+
     try {
       setLoading(true);
       setGeneratingAI(true);
@@ -71,15 +89,24 @@ export default function DietPlanCreatePage() {
       // Get full client data for AI prompt
       const clientData = await getClient(formData.clientId);
 
-      // Generate diet plan using AI
+      // Generate diet plan using AI (with userId for usage tracking)
       console.log('🤖 Generating AI diet plan...');
-      const generatedPlan = await generateWithAI(clientData, formData.rawInput);
+      const aiResult = await generateWithAI(clientData, formData.rawInput, user.uid);
+
+      // Update usage info
+      if (aiResult.remaining !== null) {
+        setAiUsage({
+          generationsUsed: aiUsage ? aiUsage.generationsUsed + 1 : 1,
+          limit: aiResult.limit,
+          remaining: aiResult.remaining
+        });
+      }
 
       // Create the diet plan with AI-generated content
       const planData = {
         title: formData.title.trim() || `Diet Plan - ${clientData.fullName}`,
         rawInput: formData.rawInput.trim(),
-        generatedPlan: generatedPlan,
+        generatedPlan: aiResult.generatedPlan,
         notes: formData.notes.trim(),
         status: 'generated'
       };
@@ -140,6 +167,31 @@ export default function DietPlanCreatePage() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
+            </div>
+          )}
+
+          {/* AI Usage Indicator */}
+          {aiUsage && (
+            <div className={`px-4 py-3 rounded border ${
+              aiUsage.remaining > 0 
+                ? 'bg-blue-50 border-blue-200 text-blue-900' 
+                : 'bg-red-50 border-red-200 text-red-700'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">
+                    {aiUsage.remaining > 0 ? '🤖 AI Generations Available' : '⛔ AI Limit Reached'}
+                  </span>
+                </div>
+                <div className="text-sm font-semibold">
+                  {aiUsage.remaining}/{aiUsage.limit} remaining today
+                </div>
+              </div>
+              {aiUsage.remaining === 0 && (
+                <p className="text-sm mt-1">
+                  Daily limit reached. Resets tomorrow (UTC midnight).
+                </p>
+              )}
             </div>
           )}
 
@@ -267,10 +319,20 @@ export default function DietPlanCreatePage() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || clients.length === 0}>
+            <Button 
+              type="submit" 
+              disabled={loading || clients.length === 0 || (aiUsage && aiUsage.remaining <= 0)}
+            >
               {generatingAI ? '🤖 Generating with AI...' : loading ? 'Creating...' : '🤖 Generate Diet Plan'}
             </Button>
           </div>
+
+          {/* Limit Reached Warning */}
+          {aiUsage && aiUsage.remaining <= 0 && (
+            <p className="text-sm text-red-600 text-center">
+              ⛔ Daily AI generation limit reached. Resets tomorrow (UTC midnight).
+            </p>
+          )}
         </form>
       </Card>
     </div>
