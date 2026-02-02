@@ -8,18 +8,23 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
  * Using Google Gemini API with Free Tier Usage Limits
  */
 
-// Initialize Firebase Admin (only once)
-if (!getApps().length) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-    })
-  });
+// Initialize Firebase Admin (only once) with error handling
+let admin;
+try {
+  if (!getApps().length) {
+    initializeApp({
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      })
+    });
+  }
+  admin = getFirestore();
+} catch (firebaseInitError) {
+  console.error('❌ Firebase Admin initialization failed:', firebaseInitError.message);
+  // admin will be undefined, we'll check this in the handler
 }
-
-const admin = getFirestore();
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -125,6 +130,16 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Check if Firebase Admin initialized successfully
+    if (!admin) {
+      console.error('❌ Firebase Admin not initialized');
+      return res.status(500).json({
+        success: false,
+        error: 'Server configuration error. Please check Firebase credentials.',
+        details: 'Firebase Admin initialization failed. Check FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY environment variables.'
+      });
+    }
+
     const { clientData, rawInput, userId } = req.body;
 
     // Validation
