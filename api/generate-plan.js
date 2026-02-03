@@ -160,24 +160,8 @@ export default async function handler(req, res) {
     });
   }
 
-  let db;
-  try {
-    // Initialize Firebase Admin
-    db = initializeFirebaseAdmin();
-  } catch (firebaseError) {
-    console.error('❌ Firebase initialization error:', firebaseError);
-    return res.status(500).json({
-      success: false,
-      error: 'Server configuration error. Please check Firebase credentials.',
-      details: firebaseError.message,
-      debugInfo: {
-        hasProjectId: !!process.env.project_id,
-        hasClientEmail: !!process.env.client_email,
-        hasPrivateKey: !!process.env.private_key,
-        privateKeyLength: process.env.private_key?.length || 0
-      }
-    });
-  }
+  // TEMPORARILY DISABLED FIREBASE ADMIN FOR TESTING
+  console.log('⚠️ Firebase Admin usage tracking is temporarily disabled for debugging');
 
   try {
     const { clientData, rawInput, userId } = req.body;
@@ -197,21 +181,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check usage limit BEFORE calling AI
-    console.log('📊 Checking AI usage limit for user:', userId);
-    const usageCheck = await checkAndTrackUsage(userId, db);
-
-    if (!usageCheck.allowed) {
-      console.log('⛔ Usage limit reached for user:', userId);
-      return res.status(429).json({
-        success: false,
-        error: usageCheck.message,
-        remaining: 0,
-        limit: DAILY_LIMIT
-      });
-    }
-
-    console.log(`✅ Usage allowed. Remaining: ${usageCheck.remaining}/${DAILY_LIMIT}`);
+    // SKIP USAGE TRACKING FOR NOW
+    console.log('⚠️ Skipping usage tracking - generating plan without limits');
 
     // Check if Gemini API key is configured
     if (!process.env.GEMINI_API_KEY) {
@@ -310,12 +281,12 @@ OUTPUT FORMAT:
 
     console.log('✅ Diet plan generated successfully');
 
-    // Return the generated plan with usage info
+    // Return the generated plan (without usage info since tracking is disabled)
     return res.status(200).json({
       success: true,
       generatedPlan,
-      remaining: usageCheck.remaining,
-      limit: DAILY_LIMIT
+      remaining: 999, // Unlimited for now
+      limit: 999
     });
 
   } catch (error) {
