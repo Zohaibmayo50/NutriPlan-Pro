@@ -1,5 +1,4 @@
 {
-  "type": "module",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "firebase-admin": "^13.6.0"

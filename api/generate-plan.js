@@ -25,29 +25,29 @@ const initializeFirebaseAdmin = () => {
 
     // Log environment variables (without exposing full values)
     console.log('🔍 Checking Firebase credentials...');
-    console.log('  FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID ? '✓ Set' : '✗ Missing');
-    console.log('  FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL ? '✓ Set' : '✗ Missing');
-    console.log('  FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY ? `✓ Set (${process.env.FIREBASE_PRIVATE_KEY.length} chars)` : '✗ Missing');
+    console.log('  project_id:', process.env.project_id ? '✓ Set' : '✗ Missing');
+    console.log('  client_email:', process.env.client_email ? '✓ Set' : '✗ Missing');
+    console.log('  private_key:', process.env.private_key ? `✓ Set (${process.env.private_key.length} chars)` : '✗ Missing');
     
-    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+    if (!process.env.project_id || !process.env.client_email || !process.env.private_key) {
       throw new Error('Missing Firebase environment variables');
     }
 
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    const privateKey = process.env.private_key.replace(/\\n/g, '\n');
     
     // Validate private key format
     if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-      throw new Error('FIREBASE_PRIVATE_KEY does not contain BEGIN marker');
+      throw new Error('private_key does not contain BEGIN marker');
     }
     if (!privateKey.includes('-----END PRIVATE KEY-----')) {
-      throw new Error('FIREBASE_PRIVATE_KEY does not contain END marker');
+      throw new Error('private_key does not contain END marker');
     }
     
     console.log('🔥 Initializing Firebase Admin...');
     admin.initializeApp({
       credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        projectId: process.env.project_id,
+        clientEmail: process.env.client_email,
         privateKey: privateKey
       })
     });
@@ -171,10 +171,10 @@ export default async function handler(req, res) {
       error: 'Server configuration error. Please check Firebase credentials.',
       details: firebaseError.message,
       debugInfo: {
-        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
-        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
-        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
-        privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0
+        hasProjectId: !!process.env.project_id,
+        hasClientEmail: !!process.env.client_email,
+        hasPrivateKey: !!process.env.private_key,
+        privateKeyLength: process.env.private_key?.length || 0
       }
     });
   }
