@@ -291,33 +291,44 @@ OUTPUT FORMAT:
 
   } catch (error) {
     console.error('❌ Error generating diet plan:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
 
     // Handle specific Gemini API errors
     if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('API key not valid')) {
       return res.status(500).json({
         success: false,
-        error: 'AI service configuration error. Please contact support.'
+        error: 'AI service configuration error. Please contact support.',
+        details: error.message
       });
     }
 
     if (error.message?.includes('RATE_LIMIT') || error.message?.includes('quota') || error.status === 429) {
       return res.status(429).json({
         success: false,
-        error: 'AI service is temporarily busy. Please try again later.'
+        error: 'AI service is temporarily busy. Please try again later.',
+        details: error.message
       });
     }
 
     if (error.message?.includes('SAFETY')) {
       return res.status(400).json({
         success: false,
-        error: 'Content was blocked by safety filters. Please rephrase your input.'
+        error: 'Content was blocked by safety filters. Please rephrase your input.',
+        details: error.message
       });
     }
 
-    // Generic error response (don't expose internal errors)
+    // Generic error response with details for debugging
     return res.status(500).json({
       success: false,
-      error: 'Failed to generate diet plan. Please try again later.'
+      error: 'Failed to generate diet plan. Please try again later.',
+      details: error.message,
+      errorType: error.constructor.name,
+      debugInfo: {
+        hasGeminiKey: !!process.env.GEMINI_API_KEY,
+        geminiKeyLength: process.env.GEMINI_API_KEY?.length || 0
+      }
     });
   }
 }
