@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import * as admin from 'firebase-admin';
 
 /**
  * Vercel Serverless Function - AI Diet Plan Generation
@@ -8,22 +7,32 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
  * Using Google Gemini API with Free Tier Usage Limits
  */
 
-// Initialize Firebase Admin (only once) with error handling
-let admin;
-let firebaseError = null;
+// Initialize Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-try {
-  // Log environment variables (without exposing full values)
-  console.log('🔍 Checking Firebase credentials...');
-  console.log('  FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID ? '✓ Set' : '✗ Missing');
-  console.log('  FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL ? '✓ Set' : '✗ Missing');
-  console.log('  FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY ? `✓ Set (${process.env.FIREBASE_PRIVATE_KEY.length} chars)` : '✗ Missing');
-  
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-    throw new Error('Missing Firebase environment variables');
-  }
+// Free tier daily limit
+const DAILY_LIMIT = 3;
 
-  if (!getApps().length) {
+/**
+ * Initialize Firebase Admin (lazy initialization)
+ */
+const initializeFirebaseAdmin = () => {
+  try {
+    // Check if already initialized
+    if (admin.apps.length > 0) {
+      return admin.firestore();
+    }
+
+    // Log environment variables (without exposing full values)
+    console.log('🔍 Checking Firebase credentials...');
+    console.log('  FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID ? '✓ Set' : '✗ Missing');
+    console.log('  FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL ? '✓ Set' : '✗ Missing');
+    console.log('  FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY ? `✓ Set (${process.env.FIREBASE_PRIVATE_KEY.length} chars)` : '✗ Missing');
+    
+    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+      throw new Error('Missing Firebase environment variables');
+    }
+
     const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
     
     // Validate private key format
@@ -35,28 +44,22 @@ try {
     }
     
     console.log('🔥 Initializing Firebase Admin...');
-    initializeApp({
-      credential: cert({
+    admin.initializeApp({
+      credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: privateKey
       })
     });
     console.log('✅ Firebase Admin initialized successfully');
+    
+    return admin.firestore();
+  } catch (error) {
+    console.error('❌ Firebase Admin initialization failed:', error.message);
+    console.error('❌ Full error:', error);
+    throw error;
   }
-  admin = getFirestore();
-} catch (firebaseInitError) {
-  firebaseError = firebaseInitError;
-  console.error('❌ Firebase Admin initialization failed:', firebaseInitError.message);
-  console.error('❌ Full error:', firebaseInitError);
-  // admin will be undefined, we'll check this in the handler
-}
-
-// Initialize Gemini client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Free tier daily limit
-const DAILY_LIMIT = 3;
+};
 
 // System prompt - Safety-First AI Assistant
 const SYSTEM_PROMPT = `You are a professional clinical dietitian assistant.
@@ -93,12 +96,14 @@ const getTodayDate = () => {
 
 /**
  * Check and track AI usage
+ * @param {string} userId - User ID
+ * @param {FirebaseFirestore.Firestore} db - Firestore instance
  * @returns {Promise<{allowed: boolean, remaining: number, message?: string}>}
  */
-const checkAndTrackUsage = async (userId) => {
+const checkAndTrackUsage = async (userId, db) => {
   const today = getTodayDate();
   const usageDocId = `${userId}_${today}`;
-  const usageRef = admin.collection('aiUsage').doc(usageDocId);
+  const usageRef = db.collection('aiUsage').doc(usageDocId);
 
   try {
     const usageDoc = await usageRef.get();
@@ -109,7 +114,7 @@ const checkAndTrackUsage = async (userId) => {
         userId,
         date: today,
         generationsUsed: 1,
-        lastUpdated: FieldValue.serverTimestamp()
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
       });
 
       return {
@@ -132,8 +137,8 @@ const checkAndTrackUsage = async (userId) => {
 
     // Increment usage
     await usageRef.update({
-      generationsUsed: FieldValue.increment(1),
-      lastUpdated: FieldValue.serverTimestamp()
+      generationsUsed: admin.firestore.FieldValue.increment(1),
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
     });
 
     return {
@@ -155,23 +160,26 @@ export default async function handler(req, res) {
     });
   }
 
+  let db;
   try {
-    // Check if Firebase Admin initialized successfully
-    if (!admin) {
-      console.error('❌ Firebase Admin not initialized');
-      return res.status(500).json({
-        success: false,
-        error: 'Server configuration error. Please check Firebase credentials.',
-        details: firebaseError ? firebaseError.message : 'Firebase Admin initialization failed',
-        debugInfo: {
-          hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
-          hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
-          hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
-          privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0
-        }
-      });
-    }
+    // Initialize Firebase Admin
+    db = initializeFirebaseAdmin();
+  } catch (firebaseError) {
+    console.error('❌ Firebase initialization error:', firebaseError);
+    return res.status(500).json({
+      success: false,
+      error: 'Server configuration error. Please check Firebase credentials.',
+      details: firebaseError.message,
+      debugInfo: {
+        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+        privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0
+      }
+    });
+  }
 
+  try {
     const { clientData, rawInput, userId } = req.body;
 
     // Validation
@@ -191,7 +199,7 @@ export default async function handler(req, res) {
 
     // Check usage limit BEFORE calling AI
     console.log('📊 Checking AI usage limit for user:', userId);
-    const usageCheck = await checkAndTrackUsage(userId);
+    const usageCheck = await checkAndTrackUsage(userId, db);
 
     if (!usageCheck.allowed) {
       console.log('⛔ Usage limit reached for user:', userId);
