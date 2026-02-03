@@ -253,9 +253,9 @@ OUTPUT FORMAT:
 
     console.log('🤖 Generating diet plan for:', clientData.fullName);
 
-    // Initialize Gemini model (1.0 Pro - stable and free)
+    // Initialize Gemini model (use gemini-pro for free tier)
     const model = genAI.getGenerativeModel({ 
-      model: 'models/gemini-1.0-pro',
+      model: 'gemini-pro',
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 3000,
