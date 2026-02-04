@@ -251,8 +251,8 @@ OUTPUT FORMAT:
     console.log('🤖 Generating diet plan for:', clientData.fullName);
 
     // Call Gemini API directly (for Google AI Studio API keys)
-    // Using v1 API (not v1beta) with gemini-1.5-flash
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    // Using v1 API with gemini-2.5-flash (latest free tier model)
+    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
     
     const fullPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}`;
     
