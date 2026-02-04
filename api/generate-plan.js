@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+// No SDK import needed - using direct fetch to Gemini API
 import * as admin from 'firebase-admin';
 
 /**
@@ -6,9 +6,6 @@ import * as admin from 'firebase-admin';
  * POST /api/generate-plan
  * Using Google Gemini API with Free Tier Usage Limits
  */
-
-// Initialize Gemini client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Free tier daily limit
 const DAILY_LIMIT = 3;
@@ -253,22 +250,37 @@ OUTPUT FORMAT:
 
     console.log('🤖 Generating diet plan for:', clientData.fullName);
 
-    // Initialize Gemini model (gemini-pro is stable for v1beta)
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-pro',
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 3000,
-      }
+    // Call Gemini API directly (for Google AI Studio API keys)
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    
+    const fullPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}`;
+    
+    const apiResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: fullPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 3000,
+        }
+      })
     });
 
-    // Combine system prompt with user prompt
-    const fullPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}`;
+    if (!apiResponse.ok) {
+      const errorData = await apiResponse.json();
+      console.error('❌ Gemini API Error:', errorData);
+      throw new Error(`Gemini API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
 
-    // Call Gemini API
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const generatedPlan = response.text();
+    const data = await apiResponse.json();
+    const generatedPlan = data.candidates[0].content.parts[0].text;
 
     // Safety check - block unsafe content
     if (containsUnsafePhrases(generatedPlan)) {
