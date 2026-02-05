@@ -4,9 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { getDietPlan, updateDietPlan, deleteDietPlan } from '../../services/dietPlanService';
 import { getClient } from '../../services/clientService';
 import { generateDietPlan as generateWithAI } from '../../services/aiService';
-import { Card } from '../../components/ui/Card';
+import { Card } from '../../components/ui/Button';
 import { Button } from '../../components/ui/Button';
-import FormattedPlan from '../../components/plans/FormattedPlan';
+import BrandedDietPlan from '../../components/plans/BrandedDietPlan';
 import html2pdf from 'html2pdf.js';
 
 export default function DietPlanDetailPage() {
@@ -423,7 +423,11 @@ export default function DietPlanDetailPage() {
               plan?.generatedPlan ? (
                 <div className="prose max-w-none print:prose-lg">
                   <div className="bg-white p-6 rounded-lg border border-gray-200" ref={planContentRef}>
-                    <FormattedPlan planContent={plan.generatedPlan} />
+                    <BrandedDietPlan 
+                      planContent={plan.generatedPlan}
+                      clientName={client?.fullName}
+                      planTitle={plan.title}
+                    />
                   </div>
                   <div className="mt-4 text-xs text-gray-500 no-print">
                     💡 <strong>Tip:</strong> Use "Export PDF" to save as a file, or "Print" for quick printing
