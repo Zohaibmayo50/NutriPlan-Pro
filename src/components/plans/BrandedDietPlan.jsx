@@ -81,10 +81,19 @@ export default function BrandedDietPlan({ planContent, clientName, planTitle }) 
   };
 
   const sections = parseDietPlan(planContent);
-  const clinicName = branding?.businessName || userProfile?.displayName || 'Professional Nutrition Services';
+  
+  // Extract branding info with proper fallbacks
+  const clinicName = branding?.businessName || userProfile?.displayName || userProfile?.email?.split('@')[0] || 'Nutrition Clinic';
   const logo = branding?.logoUrl;
-  const contactInfo = branding?.contactInfo || userProfile?.email;
   const primaryColor = branding?.primaryColor || '#22c55e';
+  
+  // Contact info from branding footer settings or user profile
+  const phone = branding?.footerSettings?.phone || '';
+  const email = branding?.footerSettings?.email || userProfile?.email || '';
+  const website = branding?.footerSettings?.website || '';
+  const address = branding?.footerSettings?.address || '';
+
+  console.log('🎨 Branding loaded:', { clinicName, logo, primaryColor, phone, email });
 
   return (
     <div className="branded-diet-plan" style={{ 
@@ -218,19 +227,24 @@ export default function BrandedDietPlan({ planContent, clientName, planTitle }) 
         <div style={{ marginBottom: '8px', fontWeight: 'bold', fontSize: '10pt', color: '#333' }}>
           {clinicName}
         </div>
-        {contactInfo && (
+        {email && (
           <div style={{ marginBottom: '5px' }}>
-            {contactInfo}
+            Email: {email}
           </div>
         )}
-        {branding?.address && (
+        {phone && (
           <div style={{ marginBottom: '5px' }}>
-            {branding.address}
+            Phone: {phone}
           </div>
         )}
-        {branding?.phone && (
+        {website && (
           <div style={{ marginBottom: '5px' }}>
-            Tel: {branding.phone}
+            Website: {website}
+          </div>
+        )}
+        {address && (
+          <div style={{ marginBottom: '5px' }}>
+            Address: {address}
           </div>
         )}
         <div style={{ marginTop: '10px', fontSize: '8pt', fontStyle: 'italic' }}>
