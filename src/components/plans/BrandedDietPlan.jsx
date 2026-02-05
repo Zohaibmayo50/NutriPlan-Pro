@@ -44,24 +44,31 @@ export default function BrandedDietPlan({ planContent, clientName, planTitle }) 
     let currentSection = null;
 
     lines.forEach(line => {
-      const trimmed = line.trim();
+      let trimmed = line.trim();
       if (!trimmed) return;
 
-      // Detect headings (ending with : or all caps)
-      if (trimmed.endsWith(':') || trimmed === trimmed.toUpperCase()) {
+      // Remove markdown formatting
+      trimmed = trimmed
+        .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove **bold**
+        .replace(/\*(.*?)\*/g, '$1')       // Remove *italic*
+        .replace(/^#+\s+/, '')             // Remove # headers
+        .replace(/~~(.*?)~~/g, '$1');      // Remove ~~strikethrough~~
+
+      // Detect headings (ending with : or all caps or numbered sections)
+      if (trimmed.endsWith(':') || trimmed === trimmed.toUpperCase() || /^\d+\.\s+[A-Z]/.test(trimmed)) {
         if (currentSection) sections.push(currentSection);
         currentSection = {
           type: 'heading',
-          title: trimmed.replace(':', ''),
+          title: trimmed.replace(/[:\d+\.\s]+$/, '').replace(/^\d+\.\s+/, ''),
           content: []
         };
       }
       // Detect bullet points
-      else if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+      else if (trimmed.startsWith('-') || trimmed.startsWith('•') || /^\d+\.\s+/.test(trimmed)) {
         if (currentSection) {
           currentSection.content.push({
             type: 'bullet',
-            text: trimmed.replace(/^[-•]\s*/, '')
+            text: trimmed.replace(/^[-•\d+\.\s]+/, '')
           });
         }
       }
@@ -72,6 +79,12 @@ export default function BrandedDietPlan({ planContent, clientName, planTitle }) 
             type: 'text',
             text: trimmed
           });
+        } else {
+          // Create a section for orphaned text
+          currentSection = {
+            type: 'text-section',
+            content: [{ type: 'text', text: trimmed }]
+          };
         }
       }
     });

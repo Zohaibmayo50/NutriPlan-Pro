@@ -151,8 +151,10 @@ FORMATTING RULES
 - Use clear section headings
 - Use bullet points for lists
 - NO emojis
-- NO markdown tables
+- NO markdown formatting (no **, no #, no ~~)
 - NO technical jargon
+- Use plain text only - the system will handle formatting
+- Write numbers and lists naturally
 - Clean, professional layout
 
 Write as if YOU are the dietitian personally creating this plan for your client.`;
