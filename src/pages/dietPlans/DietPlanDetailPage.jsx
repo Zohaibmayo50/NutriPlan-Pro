@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getDietPlan, updateDietPlan, deleteDietPlan } from '../../services/dietPlanService';
 import { getClient } from '../../services/clientService';
 import { generateDietPlan as generateWithAI } from '../../services/aiService';
-import { Card } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import BrandedDietPlan from '../../components/plans/BrandedDietPlan';
 import html2pdf from 'html2pdf.js';
